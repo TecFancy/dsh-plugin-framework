@@ -1,0 +1,7 @@
+/**
+ * lint-staged configuration.
+ */
+export default {
+  "*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}": ["prettier --write"],
+  "*.{ts,tsx}": ["eslint --fix"],
+};
