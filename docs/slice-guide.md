@@ -42,10 +42,11 @@ scripts/check-aliases.mjs) if a plugin prefers alias imports.
 ## Creating a slice with the scaffold
 
 ```bash
-node scripts/create-slice.mjs --side host --layer features --name my-feature --model
+node scripts/create-slice.mjs --side host --layer features --name my-feature
 node scripts/create-slice.mjs --side client --layer features --name my-feature --ui
 node scripts/create-slice.mjs --side host --layer entities --name my-entity
 node scripts/create-slice.mjs --side host --layer shared --name my-lib --segment lib
+node scripts/create-slice.mjs --side client --layer shared --name my-chip --segment ui
 ```
 
 The scaffold writes the barrel, a placeholder module, and a test. Fill in the

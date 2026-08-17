@@ -18,7 +18,7 @@
  * when a module is genuinely reused by 2+ consumers.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -67,6 +67,11 @@ function parseArgs(argv) {
   if (args.layer === "shared") {
     if (!args.segment) usage();
     if (!["lib", "ui", "config"].includes(args.segment)) usage();
+  } else if (args.segment) {
+    usage(); // --segment is only meaningful for shared layers
+  }
+  if (args.ui && (args.layer !== "features" || args.side !== "client")) {
+    usage(); // --ui only applies to client features
   }
   return args;
 }
@@ -123,6 +128,17 @@ if (args.layer === "features" && args.side === "host") {
     testPlaceholder(`./${args.name}.js`, args),
   ]);
   barrel.push(`export { placeholder } from "./model/${args.name}.js";`);
+} else if (args.side === "client" && args.segment === "ui") {
+  // client shared ui component: tsx + css module + test + barrel, matching the
+  // framework's shared/ui/<component>/ convention
+  const namePascal = pascalCase(args.name);
+  files.push([join(sliceDir, `${namePascal}.tsx`), uiPlaceholder(namePascal, args)]);
+  files.push([
+    join(sliceDir, `${namePascal}.module.css`),
+    "/* styles for the shared UI component (CSS Modules, embedded into the client bundle) */\n",
+  ]);
+  files.push([join(sliceDir, `${namePascal}.test.tsx`), uiTestPlaceholder(namePascal, args)]);
+  barrel.push(`export { ${namePascal} } from "./${namePascal}.js";`);
 } else {
   // shared segment slice: implementation file + test + barrel (index.ts)
   files.push([join(sliceDir, `${args.name}.ts`), placeholder("index", args)]);
@@ -137,7 +153,7 @@ files.push([join(sliceDir, "index.ts"), barrel.join("\n") + "\n"]);
 for (const [path, content] of files) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content, "utf8");
-  console.log("created", path.replace(repoRoot + "\\", ""));
+  console.log("created", relative(repoRoot, path));
 }
 
 function pascalCase(name) {
@@ -153,9 +169,7 @@ function placeholder(kind, a) {
     "/**",
     ` * TODO(${what}): implement this ${kind} placeholder for the ${a.layer} slice.`,
     " */",
-    a.side === "client" && a.layer === "features"
-      ? `export function placeholder(): void { /* TODO(${what}) */ }`
-      : `export function placeholder(): void { /* TODO(${what}) */ }`,
+    `export function placeholder(): void { /* TODO(${what}) */ }`,
     "",
   ].join("\n");
 }

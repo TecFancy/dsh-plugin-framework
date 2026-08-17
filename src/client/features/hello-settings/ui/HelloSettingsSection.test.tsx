@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import type { HostBridge } from "../../../shared/config/context.ts";
+import type { HostBridge } from "../../../shared/config/index.ts";
 import { HelloSettingsSection } from "./HelloSettingsSection.tsx";
 
 function stubHost(initial: string) {

@@ -7,7 +7,7 @@
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, extname, resolve } from "node:path";
+import { dirname, extname, relative, resolve } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
@@ -46,7 +46,7 @@ for (const file of files) {
   if (!content.includes(EM_DASH)) continue;
 
   const lines = content.split("\n");
-  const relativePath = file.replace(srcDir + "\\", "");
+  const relativePath = relative(srcDir, file);
   lines.forEach((line, index) => {
     if (line.includes(EM_DASH)) {
       findings.push(`${relativePath}:${index + 1}: ${line.trim()}`);

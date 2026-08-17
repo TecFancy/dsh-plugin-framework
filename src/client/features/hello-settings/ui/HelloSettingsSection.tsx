@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { HostBridge } from "../../../shared/config/context.ts";
+import type { HostBridge } from "../../../shared/config/index.ts";
 import { Button } from "../../../shared/ui/button/index.ts";
 import css from "./HelloSettingsSection.module.css";
 

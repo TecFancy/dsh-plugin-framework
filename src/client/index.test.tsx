@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apply } from "./index.tsx";
-import type { HelloClientContext, HostBridge } from "./shared/config/context.ts";
+import type { HelloClientContext, HostBridge } from "./shared/config/index.ts";
 
 /**
  * Smoke tests for the client assembly root: apply() must defer the settings

@@ -48,6 +48,13 @@ slices may not import each other; when two same-layer modules genuinely depend
 on each other, merge them into ONE slice (Strategy A) instead of reaching for
 cross-slice bridges.
 
+**Barrels (public API).** Every slice exposes an `index.ts` barrel as its only
+legal import surface, and imports within the repo go through it
+(`entities/greeting`, `shared/lib/logger`, `client/shared/config`). This rule
+is a review discipline, not yet a lint rule (`no-internal-modules` is a
+candidate follow-up when the slice count grows enough to justify it); keep the
+example slices honest so downstream plugins copy the correct pattern.
+
 ## The host/client boundary
 
 There are no legal code imports across host and client. The only couplings are:

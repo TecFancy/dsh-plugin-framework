@@ -1,6 +1,6 @@
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import type { ToolRuntime } from "@deepseek-ai/dsh-tools";
-import type { GreetingService } from "../../../entities/greeting/model/greeting.js";
+import type { GreetingService } from "../../../entities/greeting/index.js";
 
 /**
  * Registers the example model-facing tool on the dsh tool runtime.

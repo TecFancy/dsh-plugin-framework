@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
-import { GreetingService } from "../../../entities/greeting/model/greeting.js";
+import { GreetingService } from "../../../entities/greeting/index.js";
 import { registerHelloTool } from "./register-tool.js";
 
 function fakeTools() {

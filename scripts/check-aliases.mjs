@@ -29,7 +29,14 @@ function readJson(relativePath) {
 const aliases = readJson("aliases.json");
 const clientTsconfig = readJson("tsconfig.client.json");
 
-/** Extract the resolve.alias target for an alias key from vitest.config.ts. */
+/**
+ * Extract the resolve.alias target for an alias key from vitest.config.ts.
+ *
+ * CAUTION: this regex depends on the exact spelling used in vitest.config.ts
+ * (`"client/...": fileURLToPath(new URL("./src/client/..."))`). If that file
+ * changes spelling (single quotes, a helper, a different URL form), update
+ * this regex too - it fails closed (blocks CI) rather than passing silently.
+ */
 function readVitestAlias() {
   const source = readFileSync(resolve(repoRoot, "vitest.config.ts"), "utf8");
   const out = {};

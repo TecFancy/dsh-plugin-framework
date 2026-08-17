@@ -48,7 +48,9 @@ if (!existsSync(cssPath)) {
   // the footer/single-file contract holds (e.g. strip stray css imports).
   bundle = bundle.replace(/^import\s+['"][^'"]+\.css['"];\n/gm, "");
   writeFileSync(bundlePath, bundle, "utf8");
-  console.log("normalize: no style.css extracted (no CSS Modules in this build); bundle unchanged");
+  console.log(
+    "normalize: no style.css extracted (no CSS Modules in this build); only stray css-import cleanup applied",
+  );
   process.exit(0);
 }
 

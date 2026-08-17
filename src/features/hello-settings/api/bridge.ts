@@ -1,4 +1,4 @@
-import type { GreetingService } from "../../../entities/greeting/model/greeting.js";
+import type { GreetingService } from "../../../entities/greeting/index.js";
 import { logger } from "../../../shared/lib/logger/index.js";
 
 /**

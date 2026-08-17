@@ -19,7 +19,7 @@ import {
   rmSync,
   statSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -41,7 +41,9 @@ function collectFiles(dir, base = dir) {
     if (statSync(full).isDirectory()) {
       out.push(...collectFiles(full, base));
     } else {
-      out.push({ relative: full.replace(base + "\\", ""), full });
+      // relative() is cross-platform; a hard-coded separator here breaks on
+      // POSIX (CI) and would make sync delete the mirror files.
+      out.push({ relative: relative(base, full), full });
     }
   }
   return out;

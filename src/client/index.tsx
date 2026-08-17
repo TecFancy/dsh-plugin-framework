@@ -1,5 +1,5 @@
 import { HelloSettingsSection } from "./features/hello-settings/ui/HelloSettingsSection.tsx";
-import type { HelloClientContext } from "./shared/config/context.ts";
+import type { HelloClientContext } from "./shared/config/index.ts";
 
 /**
  * dsh-plugin-framework client half: mounts a settings section

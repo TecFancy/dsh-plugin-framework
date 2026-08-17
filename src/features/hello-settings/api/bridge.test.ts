@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { GreetingService } from "../../../entities/greeting/model/greeting.js";
+import { GreetingService } from "../../../entities/greeting/index.js";
 import { setLogLevel } from "../../../shared/lib/logger/index.js";
 import { registerHelloBridge } from "./bridge.js";
 

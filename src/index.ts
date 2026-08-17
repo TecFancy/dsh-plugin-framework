@@ -1,7 +1,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { registerHelloBridge } from "./features/hello-settings/api/bridge.js";
 import { registerHelloTool } from "./features/hello-settings/api/register-tool.js";
-import { GreetingService } from "./entities/greeting/model/greeting.js";
+import { GreetingService } from "./entities/greeting/index.js";
 import { Config, type PluginConfig } from "./shared/config/plugin-config.js";
 
 /**
