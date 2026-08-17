@@ -1,0 +1,17 @@
+# Normalize line endings: cross-platform text with LF in the working tree.
+* text=auto
+
+# Shell hooks and scripts must stay LF to run on Windows git and CI runners.
+.husky/*                text eol=lf
+*.mjs                   text eol=lf
+*.sh                    text eol=lf
+
+# YAML/JSON/source stay LF for byte-stable locks and diffs.
+*.yml                   text eol=lf
+*.yaml                  text eol=lf
+*.json                  text eol=lf
+*.ts                    text eol=lf
+*.tsx                   text eol=lf
+*.md                    text eol=lf
+*.css                   text eol=lf
+package-lock.json       text eol=lf
