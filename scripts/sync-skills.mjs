@@ -5,6 +5,10 @@
  * Run `npm run skills:sync` to sync, `npm run skills:check` to verify drift.
  * The TARGETS map is intentionally extensible: add another agent directory
  * here instead of hand-maintaining it.
+ *
+ * Drift detection is per-file byte comparison: a file is out of sync if it is
+ * missing in a target, stale (present in a target but not in skills/), or
+ * byte-different from the source.
  */
 import {
   cpSync,
@@ -28,14 +32,6 @@ const TARGETS = [
 
 const checkMode = process.argv.includes("--check");
 const srcDir = join(repoRoot, "skills");
-
-function hashOf(content) {
-  let hash = 0;
-  for (let i = 0; i < content.length; i += 1) {
-    hash = (hash * 31 + content.charCodeAt(i)) | 0;
-  }
-  return String(hash);
-}
 
 function collectFiles(dir, base = dir) {
   if (!existsSync(dir)) return [];
@@ -75,23 +71,19 @@ for (const target of TARGETS) {
       drift.push(`${target.name}: out of sync ${file.relative}`);
     } else {
       mkdirSync(dirname(dest), { recursive: true });
-      // cpSync preserves content; writeFileSync would be equivalent but cpSync
-      // avoids re-encoding. Use a direct copy to keep byte-identical output.
       cpSync(file.full, dest);
     }
   }
 }
 
 if (checkMode) {
-  const reference = hashOf(JSON.stringify(collectFiles(srcDir).map((f) => f.relative)));
   if (drift.length > 0) {
     console.error("skills:check FAILED (run npm run skills:sync)");
     for (const line of drift) console.error("  " + line);
     process.exit(1);
   }
-  console.log(`OK: skills synced to ${TARGETS.length} targets (fingerprint ${reference})`);
+  console.log(`OK: skills synced to ${TARGETS.length} targets`);
   process.exit(0);
 }
 
 console.log(`skills synced to ${TARGETS.length} targets`);
-void hashOf;

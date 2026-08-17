@@ -5,7 +5,7 @@
  * official cordis-plugin-development skill). Type safety comes from the
  * structural HostBridge contract in shared/config/context.ts.
  */
-declare const host: import("./shared/config/context.js").HostBridge;
+declare const host: import("./shared/config/context.ts").HostBridge;
 
 /**
  * Ambient declaration for the runner-injected `styles` builtin on the dsh

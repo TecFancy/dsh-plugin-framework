@@ -18,6 +18,7 @@
  * currently running GUI session, so this script never restarts it by itself.
  */
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,7 +29,7 @@ const profileArg = process.argv.indexOf("--profile");
 const profile = profileArg >= 0 ? process.argv[profileArg + 1] : "web";
 const copy = process.argv.includes("--copy");
 
-const dshHome = process.env.DSH_HOME ?? join(process.env.USERPROFILE ?? "", ".dsh");
+const dshHome = process.env.DSH_HOME ?? join(homedir(), ".dsh");
 const profileDir = join(dshHome, "profiles", profile);
 
 console.log(`target profile: ${profileDir}`);

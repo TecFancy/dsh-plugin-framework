@@ -60,8 +60,13 @@ There are no legal code imports across host and client. The only couplings are:
    Arguments and results must be lossless JSON;
 3. **HTTP**: the host serves routes and the client fetches them.
 
-Cross-boundary imports are lint errors (`crossBoundaryZones` in
-`eslint.config.js`).
+Cross-boundary imports are lint errors at two layers. First, each side's
+tsconfig excludes the other (`tsconfig.json` excludes `src/client`;
+`tsconfig.client.json` only includes `src/client`), so any host<->client import
+is unresolvable in the importing project and fails `import-x/no-unresolved` -
+the resolver-level guard that works regardless of path spelling. Second, the
+`crossBoundaryZones` in `eslint.config.js` (`no-restricted-paths`) produce the
+explicit boundary message when the import resolves far enough to be matched.
 
 ## Runner-injected builtins
 

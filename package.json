@@ -29,6 +29,7 @@
       "default": "./lib/client.js"
     },
     "./cordis.patch.yml": "./cordis.patch.yml",
+    "./skills/*": "./skills/*",
     "./package.json": "./package.json"
   },
   "files": [
@@ -36,7 +37,8 @@
     "skills",
     "cordis.patch.yml",
     "deploy",
-    "docs"
+    "docs",
+    "!docs/fsd-port-plan.md"
   ],
   "sideEffects": false,
   "dsh": {

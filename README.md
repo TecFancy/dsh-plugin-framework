@@ -18,13 +18,22 @@ Start by reading, in order:
 A **template repository** (package name `dsh-plugin-framework`) that is itself
 a working, installable, smoke-testable example plugin. To start a new plugin:
 
-1. copy this directory (or `degit` it), rename the package, delete the example
-   slices (`src/features/hello-settings`, `src/entities/greeting`,
-   `src/client/features/hello-settings`), then build your own slices on the
-   preserved layer skeleton;
-2. run `node scripts/create-slice.mjs` to scaffold compliant slices;
-3. iterate locally: `npm run verify` (gates) and `npm run build` (artifacts);
-4. smoke-test in a web profile with `node scripts/install-to-profile.mjs`.
+1. copy this directory (or `degit` it);
+2. **rename everywhere the plugin id appears** (search-and-replace the old
+   name case-insensitively): `package.json` (name, dsh.bundle, dsh.client),
+   `cordis.patch.yml` + `deploy/cordis.patch.yml` (id), the tsdown banner id in
+   `tsdown.config.ts`, and the `export const name` in both `src/index.ts` and
+   `src/client/index.tsx`;
+3. delete the example slices (`src/features/hello-settings`,
+   `src/entities/greeting`, `src/client/features/hello-settings`), then strip
+   the imports those slices leave behind in **both assembly roots**:
+   `src/index.ts` and `src/client/index.tsx`. If you delete ALL client UI, the
+   client half may become a no-op apply; the build still succeeds (the CSS
+   inliner skips gracefully when there is no stylesheet);
+4. build your own slices on the preserved layer skeleton with
+   `node scripts/create-slice.mjs`;
+5. iterate locally: `npm run verify` (gates) and `npm run build` (artifacts);
+6. smoke-test in a web profile with `node scripts/install-to-profile.mjs`.
 
 See `docs/slice-guide.md` for the full checklist.
 

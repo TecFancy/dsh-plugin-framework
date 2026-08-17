@@ -30,8 +30,15 @@ layer of the scaffold with the smallest possible feature set.
 
 ## Using it as a template
 
-1. Copy the repo; rename the package in package.json, cordis.patch.yml, the
-   tsdown banner id, and both assembly roots.
-2. Delete the example slices and keep the skeleton.
+1. Copy the repo; rename the plugin id EVERYWHERE: package.json (name,
+   dsh.bundle, dsh.client), cordis.patch.yml + deploy/cordis.patch.yml (id),
+   the tsdown banner id in tsdown.config.ts, and `export const name` in both
+   `src/index.ts` and `src/client/index.tsx`.
+2. Delete the example slices (`src/features/hello-settings`,
+   `src/entities/greeting`, `src/client/features/hello-settings`) AND strip the
+   leftover imports in both assembly roots (`src/index.ts`,
+   `src/client/index.tsx`) so the roots compile again. Deleting all client UI
+   is fine: the build's CSS inliner skips gracefully when no stylesheet is
+   produced.
 3. Build your own slices with the create-slice scaffold and keep `npm run
 verify` green.
