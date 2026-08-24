@@ -1,38 +1,40 @@
 import { useCallback, useEffect, useState } from "react";
-import type { HostBridge } from "../../../shared/config/index.ts";
+import type { GreetingRemoteHandle } from "../../../shared/config/index.ts";
 import { Button } from "../../../shared/ui/button/index.ts";
 import css from "./HelloSettingsSection.module.css";
 
 export interface HelloSettingsSectionProps {
-  host: HostBridge;
+  remote: GreetingRemoteHandle;
 }
 
 /**
  * The settings.section UI of the example plugin: reads the current greeting
- * over the host bridge and writes it back on save. Pure view concerns; all
- * domain rules live in the host entity (blank greetings are rejected there).
+ * through the Typert Remote and writes it back on save. Pure view concerns;
+ * all domain rules live in the host entity (blank greetings are rejected
+ * there, and the Remote result envelope surfaces the outcome).
  */
-export function HelloSettingsSection({ host }: HelloSettingsSectionProps): JSX.Element {
+export function HelloSettingsSection({ remote }: HelloSettingsSectionProps): JSX.Element {
   const [greeting, setGreeting] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
     let cancelled = false;
-    void host.call<string>("hello.getGreeting").then((value) => {
-      if (!cancelled) setGreeting(value);
+    void remote.getGreeting().then((result) => {
+      if (cancelled) return;
+      if (result.ok) setGreeting(result.value);
     });
     return () => {
       cancelled = true;
     };
-  }, [host]);
+  }, [remote]);
 
   const handleSave = useCallback(() => {
     setSaving(true);
-    void host.call<string>("hello.setGreeting", greeting).then((value) => {
-      setGreeting(value);
+    void remote.setGreeting(greeting).then((result) => {
+      if (result.ok) setGreeting(result.value);
       setSaving(false);
     });
-  }, [host, greeting]);
+  }, [remote, greeting]);
 
   return (
     <div className={css["root"]}>

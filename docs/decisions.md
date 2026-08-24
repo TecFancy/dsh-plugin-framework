@@ -91,3 +91,51 @@ session. Restarting is a human step.
 
 Borrowed from fsd-react: `scripts/check-no-emdash.mjs` (ASCII hyphen only in
 `src/**`) and Prettier with print width 100. Enforced in `npm run verify`.
+
+## D11. Static RPC uses the Typert gateway, never harness/host builtins
+
+Adopted: `GreetingRemote extends TypertRemoteService` with `@Remote`
+endpoints, generated `./typert` and `./remote` artifacts, client
+`ctx.remote.$mount()`.
+
+Rejected: `harness.handle` / `host.call`. Those builtins are injected only by
+the DYNAMIC plugin evaluators (`cordis-host-runner` / `cordis-client-runner`);
+the current web profile mounts no static equivalent, so a static bundle that
+relies on them silently degrades (the old bridge warned, the UI threw).
+
+The official generator (`@deepseek-ai/dsh-typert-generator`) cannot run in
+this repo: its analyzer discovers contributors through project references of
+`tsconfig.host.json` and requires referenced packages under `<root>/packages`
+(monorepo-only by design). This scaffold therefore ships
+`scripts/generate-typert.mjs`, which emits the same artifact format from the
+`@Remote` decorators in source and fails the build when they drift. If the
+plugin ever moves into a monorepo, swap the script for
+`typertPlugin({ mode: "package" })`.
+
+## D12. CSS is inlined at build time with lightningcss
+
+Adopted: tsdown plugins in `tsdown.config.ts` compile `.module.css` (hashed
+class map) and plain `.css`/`?inline` imports with lightningcss and inject
+`<style data-plugin-css>` tags at factory execution, exactly like the official
+client bundle preset.
+
+Rejected: the previous pipeline that extracted `lib/style.css` and embedded it
+through a `styles.insert` runner builtin. The builtin exists only in the
+dynamic client evaluator, so static bundles shipped unstyled (silently, due to
+the guard). The injected style tags are build output, not source: iron law 2
+(`src/client/**` never touches `window`/`document`) is unchanged.
+
+## D13. Patch overrides are bare id rows
+
+`deploy/cordis.patch.yml` uses the current patch contract: an id-targeted row
+`- id: dsh-plugin-framework` whose `config` REPLACES the row's whole config.
+The previous `- set:` wrapper was not a patch operation and would have been
+treated as an unknown key.
+
+## D14. Official install flow
+
+Distribution stays npm/tarball-first (`prepack` builds and verifies), and
+smoke installation is `dsh plugin --profile web add <spec>` followed by a
+manual restart (the script never restarts the server, see D9). Git installs
+are supported only with a self-contained `prepare` build plus the user's pnpm
+`allowBuilds` entry, per the official publish docs.

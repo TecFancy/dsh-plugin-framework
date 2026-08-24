@@ -62,9 +62,12 @@ There are no legal code imports across host and client. The only couplings are:
 1. **Type contracts**: structural mirrors in `src/client/shared/config/` that
    describe the service shapes the client needs. They never import
    `@deepseek-ai/*` runtime values;
-2. **Package-private RPC**: the host registers methods with the `harness`
-   builtin, the client calls them with the `host` builtin (`host.call`).
-   Arguments and results must be lossless JSON;
+2. **RPC through the Typert gateway**: the host registers a
+   `TypertRemoteService` (`GreetingRemote`, `ctx.greeting`), generated
+   artifacts in `lib/` (`./typert` for the loader, `./remote` for the client)
+   describe the endpoints, and the client mounts the contribution with
+   `ctx.remote.$mount()` then calls `ctx.remote.greeting.*`. Payloads are
+   validated by strict zod codecs on both sides;
 3. **HTTP**: the host serves routes and the client fetches them.
 
 Cross-boundary imports are lint errors at two layers. First, each side's
@@ -75,17 +78,23 @@ the resolver-level guard that works regardless of path spelling. Second, the
 `crossBoundaryZones` in `eslint.config.js` (`no-restricted-paths`) produce the
 explicit boundary message when the import resolves far enough to be matched.
 
-## Runner-injected builtins
+## Runtime surfaces
 
-The dsh runners inject globals into both halves at runtime (see the official
-`cordis-plugin-development` skill):
+The dsh runners provide different surfaces to static npm-plugin bundles and to
+dynamic Cordis plugins. This scaffold targets the STATIC surface only:
 
-- host: `harness` (`.handle`, `.registerTool`, ...), `ctx`, `console`;
-- client: `host` (`.call`), `React`, `ctx`, `styles`, `console`.
+- **Host**: cordis services reached through `ctx` (inject `tools`,
+  `apiProxy`, `typertGateway`, `settings`, ...). There is no `harness`
+  builtin for static host plugins;
+- **Client**: cordis services (`slots`, `remote`, `connection`, ...) plus the
+  module-table externals (`react`, `react/jsx-runtime`). There is no `host`
+  builtin and no `styles` builtin for static client bundles.
 
-Ambient declarations live in `src/global.d.ts` and `src/client/global.d.ts`.
-Runtime access must be guarded (`typeof harness === "undefined"`) so that code
-degrades gracefully outside the runner (unit tests, module eval).
+The `harness`/`host`/`styles` builtins exist only inside the dynamic plugin
+evaluators (the official `cordis-plugin-development` skill documents them).
+Package-private RPC for a static plugin is the Typert Remote recipe above
+(`scripts/generate-typert.mjs` emits the artifacts because the official
+generator only runs inside the harness monorepo, see `docs/decisions.md` D11).
 
 ## Configuration surface
 

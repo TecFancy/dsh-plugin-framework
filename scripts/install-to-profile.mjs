@@ -40,7 +40,12 @@ if (copy) {
     console.error("profile or its node_modules is missing; falling back to printed commands");
   } else {
     mkdirSync(targetPackageDir, { recursive: true });
-    for (const file of ["lib/index.js", "lib/client.js", "cordis.patch.yml"]) {
+    for (const file of [
+      "lib/index.js",
+      "lib/client.js",
+      "lib/typert.host.js",
+      "cordis.patch.yml",
+    ]) {
       const src = join(repoRoot, file);
       if (!existsSync(src)) {
         console.error(`missing built artifact ${file} (run npm run build first)`);
@@ -57,15 +62,10 @@ if (copy) {
 }
 
 console.log(`
-Manual install commands (equivalent to what 'dsh plugin add' performs):
+Manual install commands (copy the artifacts as above, or use the CLI which
+also reconciles dsh.profile.bundles; a restart is required either way):
 
-  cd ${dshHome}/profiles/${profile}
-  pnpm add ../${repoRoot.split(/[\\/]/).pop()}
-  dsh --profile ${profile}        # restart the web server
-
-Or with the dsh CLI (registry-aware, reconciles dsh.profile.bundles):
-
-  dsh plugin --profile ${profile} add <path-or-package> dsh-plugin-framework
+  dsh plugin --profile ${profile} add <path-or-package>
 
 Deployment config overrides go into the USER layer, not the bundle patch:
 see deploy/cordis.patch.yml.

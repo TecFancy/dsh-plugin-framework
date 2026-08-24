@@ -5,9 +5,15 @@
 # patch layer (repo root cordis.patch.yml) is deliberately config-free: the
 # deploy-time override belongs here, where it can differ per environment.
 #
+# Patch semantics (current dsh): an id-targeted patch REPLACES the target
+# row's whole `config` value - restate every key the row needs, not just the
+# changed one. Layer order on boot: bundle layers (base, then each installed
+# bundle in list order), the profile's cordis.patch.yml, the home-level
+# $DSH_HOME/cordis.patch.yml, then each --patch overlay; later layers win per
+# row. There is no `set:` wrapper: the row below is the complete patch form.
+#
 # Example - change the default greeting:
 
-- set:
-    - id: dsh-plugin-framework
-      config:
-        defaultGreeting: "Hello from production"
+- id: dsh-plugin-framework
+  config:
+    defaultGreeting: "Hello from production"

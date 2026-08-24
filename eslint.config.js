@@ -14,7 +14,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
  * > client/shared). A layer may only import from strictly lower layers; same
  * layer slices may not import each other. Host and client are physically
  * separated: no direct code imports across the boundary, only type contracts,
- * harness.handle / host.call RPC, or HTTP.
+ * Typert Remote RPC, or HTTP.
  *
  * The zone list is generated the same way as the fsd-react scaffold (layer
  * order array flat-mapped into target/from pairs), reduced from six layers to
@@ -43,7 +43,7 @@ const crossBoundaryZones = [
     target: "./src/client",
     from: ["./src/features", "./src/entities", "./src/shared"],
     message:
-      "Client code must not import host slices: cross the boundary only via type contracts, harness.handle / host.call RPC, or HTTP.",
+      "Client code must not import host slices: cross the boundary only via type contracts, Typert Remote RPC, or HTTP.",
   },
   {
     // importer under src/client importing a host layer

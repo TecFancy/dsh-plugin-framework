@@ -1,45 +1,66 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
-import type { HostBridge } from "../../../shared/config/index.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { GreetingRemoteHandle, RemoteResult } from "../../../shared/config/index.ts";
 import { HelloSettingsSection } from "./HelloSettingsSection.tsx";
 
-function stubHost(initial: string) {
+function stubRemote(initial: string) {
   const calls: { method: string; args?: unknown }[] = [];
-  const host: HostBridge = {
-    call: ((method: string, args?: unknown) => {
-      calls.push({ method, args });
-      if (method === "hello.getGreeting") return Promise.resolve(initial);
-      if (method === "hello.setGreeting") return Promise.resolve(String(args));
-      return Promise.reject(new Error(`unexpected method ${method}`));
-    }) as HostBridge["call"],
+  const remote: GreetingRemoteHandle = {
+    getGreeting: vi.fn((): Promise<RemoteResult<string>> => {
+      calls.push({ method: "getGreeting", args: undefined });
+      return Promise.resolve({ ok: true, value: initial });
+    }),
+    setGreeting: vi.fn((value: string): Promise<RemoteResult<string>> => {
+      calls.push({ method: "setGreeting", args: value });
+      return Promise.resolve({ ok: true, value });
+    }),
   };
-  return { host, calls };
+  return { remote, calls };
 }
 
 describe("HelloSettingsSection", () => {
   afterEach(cleanup);
 
-  it("loads the greeting from the host bridge on mount", async () => {
-    const { host, calls } = stubHost("hi");
-    render(<HelloSettingsSection host={host} />);
+  it("loads the greeting through the remote on mount", async () => {
+    const { remote, calls } = stubRemote("hi");
+    render(<HelloSettingsSection remote={remote} />);
 
-    expect(calls[0]).toEqual({ method: "hello.getGreeting", args: undefined });
+    expect(calls[0]).toEqual({ method: "getGreeting", args: undefined });
     const input = await screen.findByTestId<HTMLInputElement>("hello-settings-greeting-input");
     expect(input.value).toBe("hi");
   });
 
-  it("writes the edited greeting back through the bridge on save", async () => {
-    const { host, calls } = stubHost("hi");
-    render(<HelloSettingsSection host={host} />);
+  it("writes the edited greeting back through the remote on save", async () => {
+    const { remote, calls } = stubRemote("hi");
+    render(<HelloSettingsSection remote={remote} />);
 
     const input = await screen.findByTestId<HTMLInputElement>("hello-settings-greeting-input");
     fireEvent.change(input, { target: { value: "bonjour" } });
 
     fireEvent.click(screen.getByTestId("hello-settings-save-btn"));
 
-    expect(calls.some((call) => call.method === "hello.setGreeting")).toBe(true);
-    const setCall = calls.find((call) => call.method === "hello.setGreeting");
+    expect(calls.some((call) => call.method === "setGreeting")).toBe(true);
+    const setCall = calls.find((call) => call.method === "setGreeting");
     expect(setCall?.args).toBe("bonjour");
+  });
+
+  it("handles a rejected save without crashing", async () => {
+    const remote: GreetingRemoteHandle = {
+      getGreeting: () => Promise.resolve({ ok: true, value: "hi" }),
+      setGreeting: () =>
+        Promise.resolve({ ok: false, error: { code: "rejected", message: "blank greeting" } }),
+    };
+    render(<HelloSettingsSection remote={remote} />);
+
+    const input = await screen.findByTestId<HTMLInputElement>("hello-settings-greeting-input");
+    fireEvent.change(input, { target: { value: "   " } });
+    fireEvent.click(screen.getByTestId("hello-settings-save-btn"));
+
+    // Let the rejection branch settle; the component keeps the user's text
+    // and does not throw.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(input.value).toBe("   ");
   });
 });

@@ -75,10 +75,19 @@ client, or the slot docs in the official skill). Prefer additive inner slots
 
 1. Add structural types to `src/client/shared/config/context.ts` (never import
    `@deepseek-ai/*` runtime values there);
-2. Host: implement `harness.handle("name", handler)` in the owning feature's
-   `api/` module (pass the builtin in for testability, see the hello bridge);
-3. Client: call `host.call("name", args)` from the UI; keep payloads lossless
-   JSON.
+2. Host: extend `TypertRemoteService` in the owning feature's `api/` module
+   and mark methods with `@Remote("endpoint")` (see the GreetingRemote slice);
+   then re-run the endpoint through `scripts/generate-typert.mjs` (it fails
+   when the class and the emitted contract disagree);
+3. Client: `inject: ["remote"]`, mount the generated contribution with
+   `await ctx.remote.$mount(greetingRemote)` in the assembly root, and call
+   `ctx.remote.<namespace>.<method>` from the UI. Results are the Remote
+   envelope (`{ ok: true, value } | { ok: false, error }`) and payloads are
+   validated by strict zod codecs.
+
+The `harness` / `host.call` RPC pair belongs to dynamic Cordis plugins only
+and must not be used by static bundles (see `docs/current-dsh-migration.md`
+W1).
 
 ## Verifying a new slice
 

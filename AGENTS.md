@@ -43,8 +43,9 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
   tsconfig.client.json + vitest resolve.alias, checked by
   scripts/check-aliases.mjs) are available if a plugin prefers alias imports.
 - Coupling host<->client only via structural type contracts
-  (`src/client/shared/config/context.ts`) and RPC (`harness.handle` /
-  `host.call`), payloads lossless JSON.
+  (`src/client/shared/config/context.ts`) and Typert Remote RPC (host
+  `TypertRemoteService` + `@Remote`, generated `lib/typert.*` artifacts,
+  client `ctx.remote.$mount`), payloads validated by strict codecs.
 
 ## Conventions
 
@@ -55,9 +56,10 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
   disposers; nothing at module scope.
 - Tests sit next to code (`<file>.test.ts`); client UI tests carry a
   `// @vitest-environment jsdom` docblock and use explicit vitest imports.
-- Runner-injected builtins (`harness` on host, `host` on client) are ambient
-  (src/global.d.ts, src/client/global.d.ts) and must be guarded with
-  `typeof x === "undefined"` before use.
+- Static bundles receive cordis services on both halves (`tools`,
+  `typertGateway`, `slots`, `remote`, `connection`, ...); there are NO
+  `harness`/`host`/`styles` builtins for static bundles - those exist only in
+  the dynamic plugin evaluators.
 - No em-dash characters in `src/**` (scripts/check-no-emdash.mjs).
 - Commit messages: Conventional Commits, types
   feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert (commitlint),

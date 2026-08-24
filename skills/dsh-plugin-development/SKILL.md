@@ -8,7 +8,9 @@ description: Develop, modify, debug, or verify static dsh (DeepSeek Harness) Cor
 This skill covers STATIC npm-package plugins built on this framework. Dynamic
 plugins (created at runtime via cordis_define/cordis_run) are plain sandboxed
 JavaScript with no build step and are OUT OF SCOPE: they have no tsc/tsdown/npm
-concepts, and framework rules do not apply to them.
+concepts, and framework rules do not apply to them. The dynamic evaluators
+inject `harness` (host) and `host`/`styles` (client) builtins; static bundles
+DO NOT have those - see Runtime services below.
 
 ## The two halves
 
@@ -27,8 +29,9 @@ Host: features > entities > shared. Client mirror: client/features >
 client/entities > client/shared. A layer imports only strictly lower layers;
 same-layer slices never import each other (merge slices instead). Host and
 client never import each other: coupling is limited to type contracts
-(`src/client/shared/config/context.ts`) and RPC (`harness.handle` on host,
-`host.call` on client). Bars and barrels: every slice exposes index.ts as its
+(`src/client/shared/config/context.ts`) and Typert Remote RPC (host
+`TypertRemoteService`, client `ctx.remote.$mount` + the generated `/remote`
+contribution; see scripts/generate-typert.mjs). Bars and barrels: every slice exposes index.ts as its
 only import surface; imports are relative (host with the `.js` suffix, client
 with the `.ts`/`.tsx` suffix); the `client/...` aliases are also wired up if a
 plugin prefers them.
@@ -37,21 +40,34 @@ plugin prefers them.
 
 1. Host code never uses JSX/React.
 2. Client code never touches window/document directly; styles go through CSS
-   Modules (inlined) and colors come from host theme variables.
+   Modules (inlined at build time by the lightningcss tsdown plugins) and
+   colors come from host theme variables.
 3. Every contribution is disposable: use ctx.effect with a disposer-returning
    callback; retain and return disposers from registration APIs. Nothing at
    module scope.
-4. RPC payloads are lossless JSON only; never pass functions, elements,
-   classes, or services.
+4. Remote payloads are JSON and validated by generated strict codecs; never
+   pass functions, elements, classes, or services.
 
-## Runner-injected builtins
+## Runtime services
 
-- Host: `harness` (.handle, .registerTool, ...) - ambient declaration in
-  src/global.d.ts; guard access with `typeof harness === "undefined"`.
-- Client: `host` (.call), `React`, `styles` - ambient declaration in
-  src/client/global.d.ts.
+- Host: cordis services through ctx (`tools`, `apiProxy`, `typertGateway`,
+  `settings`, ...). No `harness` builtin.
+- Client: cordis services (`slots`, `remote`, `connection`, ...) plus the
+  module-table externals (`react`, `react/jsx-runtime`). No `host` or
+  `styles` builtin.
 
-## Slots
+## RPC recipe (host <-> client)
+
+1. Host slice: class extends `TypertRemoteService` (service key = wire
+   namespace), methods marked with `@Remote("endpoint")`; mount it in the
+   host assembly root.
+2. Run `npm run generate:typert` (wired into type-check and build): it emits
+   `lib/typert.host.js` + `lib/typert.remote-client.js` in the official
+   generator format and fails on drift with the source markers.
+3. Client: `inject: ["slots", "remote"]`; in the assembly root
+   `await ctx.remote.$mount(greetingRemote)`; then call
+   `ctx.remote.<namespace>.<method>` from the UI. Results are the Remote
+   envelope (`{ ok: true, value } | { ok: false, error }`).## Slots
 
 Query the live slot tree before choosing a target (Slots.listSubTree on the
 client, or the official cordis-plugin-development skill). Prefer additive
@@ -74,6 +90,8 @@ jsdom` docblock.
 features|entities|shared --name <kebab> [--ui] [--segment ...]`.
 4. Implement, then verify: npm run type-check && npm run lint && npm run
    test:coverage && npm run verify.
-5. Build and smoke-install: npm run build && node
-   scripts/install-to-profile.mjs --copy (restart dsh web by hand; the script
-   never restarts it).
+5. Build and smoke-install: npm run build, then
+   `dsh plugin --profile web add <spec>` and restart the profile by hand (a
+   restart terminates the running GUI session; never trigger it from a
+   script). `node scripts/install-to-profile.mjs --copy` remains an
+   iteration shortcut for already-link-installed profiles.

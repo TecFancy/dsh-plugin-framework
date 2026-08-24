@@ -6,7 +6,12 @@
  * 2. it opens with the window.__ModuleLoader__.load banner and closes with the
  *    factory footer;
  * 3. the module loader load call appears exactly once at the top level;
- * 4. the bundle is a non-trivial size (rules out empty builds).
+ * 4. the bundle is a non-trivial size (rules out empty builds);
+ * 5. no stylesheet asset survived (CSS is inlined at build time) and the
+ *    bundle uses the current style-injection tag, not the removed `styles`
+ *    runner builtin;
+ * 6. the generated Typert /remote contribution is embedded (its endpoints
+ *    must reach the browser inside the single file).
  *
  * Heuristic by design: the bundle is a CJS closure, so a full static analysis
  * of its externals is not practical here. The important invariants are the
@@ -29,7 +34,7 @@ function check(condition, message) {
 check(exists(bundlePath), `lib/client.js missing (run npm run build first)`);
 check(
   !exists(resolve(repoRoot, "lib", "style.css")),
-  "lib/style.css must not ship: the single-file contract only loads client.js (normalize-client-bundle.mjs should have inlined it)",
+  "lib/style.css must not ship: the single-file contract only loads client.js (CSS is inlined by the tsdown lightningcss plugins)",
 );
 if (exists(bundlePath)) {
   const stats = statSync(bundlePath);
@@ -57,6 +62,18 @@ if (exists(bundlePath)) {
   check(
     content.includes('id: "dsh-plugin-framework"'),
     'bundle id mismatch: expected id: "dsh-plugin-framework"',
+  );
+  check(
+    content.includes("dsh-plugin-framework#greeting/getGreeting"),
+    "bundle must embed the generated Typert /remote contribution (greeting/getGreeting descriptor)",
+  );
+  check(
+    !content.includes("styles.insert"),
+    "bundle must not reference the removed `styles` runner builtin (the current CSS pipeline inlines style tags at build time)",
+  );
+  check(
+    content.includes("data-plugin-css"),
+    "bundle must carry the current inline style injection (data-plugin-css) when CSS Modules are used",
   );
   check(
     !content.includes("codeSplitting"),

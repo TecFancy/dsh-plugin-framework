@@ -1,5 +1,5 @@
 import type { Context } from "@deepseek-ai/cordis";
-import { registerHelloBridge } from "./features/hello-settings/api/bridge.js";
+import { GreetingRemote } from "./features/hello-settings/api/remote.js";
 import { registerHelloTool } from "./features/hello-settings/api/register-tool.js";
 import { GreetingService } from "./entities/greeting/index.js";
 import { Config, type PluginConfig } from "./shared/config/plugin-config.js";
@@ -10,9 +10,10 @@ import { Config, type PluginConfig } from "./shared/config/plugin-config.js";
  *
  * - entities/greeting   domain object plus its storage-free state
  * - features/hello-settings/api   a model Tool registration and the host half
- *   of the client-to-host bridge (harness.handle)
- * - client/...          the settings.section UI that talks to the bridge over
- *   host.call JSON RPC
+ *   of the client-to-host bridge (GreetingRemote, dispatched by the Typert
+ *   gateway over /api; the client calls it through ctx.remote.$mount)
+ * - client/...          the settings.section UI that reads and writes the
+ *   greeting over the same Remote
  *
  * The apply() root wires services into cordis lifecycle effects so every
  * contribution is removed when the plugin stops or updates.
@@ -30,7 +31,9 @@ export function apply(ctx: Context, config: PluginConfig): void {
   const log = ctx.logger("dsh-plugin-framework");
 
   ctx.effect(() => registerHelloTool(ctx.tools, greeting), "dsh-plugin-framework: register tool");
-  ctx.effect(() => registerHelloBridge(greeting), "dsh-plugin-framework: host bridge");
+  // The TypertRemoteService registers ctx.greeting in this fiber (withdrawn
+  // automatically on unload); the gateway dispatches the greeting/* endpoints.
+  new GreetingRemote(ctx, greeting);
 
   log.info("dsh-plugin-framework activated (defaultGreeting=%s)", config.defaultGreeting);
 }

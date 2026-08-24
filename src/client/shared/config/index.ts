@@ -3,8 +3,11 @@
  * directly from ./context.ts outside this segment.
  */
 export type {
+  GreetingRemoteHandle,
   HelloClientContext,
-  HostBridge,
+  RemoteContribution,
+  RemoteResult,
+  RemoteService,
   SlotRegisterOptions,
   SlotsService,
 } from "./context.ts";

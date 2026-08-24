@@ -4,14 +4,16 @@ import { apply } from "./index.js";
 
 /**
  * Smoke test for the host assembly root: apply() must wire the tool
- * registration and the host bridge as disposable cordis effects, with no
- * global side effects. Uses a minimal structural fake of the cordis context;
- * the real context is provided by the dsh host runner.
+ * registration as a disposable cordis effect and register the GreetingRemote
+ * service in the current fiber, with no global side effects. Uses a minimal
+ * structural fake of the cordis context; the real context is provided by the
+ * dsh host runner.
  */
 function fakeContext() {
   const disposer = vi.fn(() => undefined);
   const register = vi.fn((_definition: unknown) => disposer);
   const effects: (() => unknown)[] = [];
+  const provided: string[] = [];
   const ctx = {
     tools: { register },
     logger: (_name: string) => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
@@ -19,33 +21,33 @@ function fakeContext() {
       effects.push(callback);
       return disposer;
     },
+    reflect: {
+      provide: (name: string) => {
+        provided.push(name);
+      },
+    },
     get: () => undefined,
   };
-  return { ctx, register, effects, disposer };
+  return { ctx, register, effects, disposer, provided };
 }
 
 describe("apply (host root)", () => {
-  it("registers the tool and the bridge as disposable effects", () => {
-    const { ctx, register, effects, disposer } = fakeContext();
+  it("registers the tool as a disposable effect and the greeting remote", () => {
+    const { ctx, register, effects, disposer, provided } = fakeContext();
 
     apply(ctx as unknown as Context, { defaultGreeting: "hello framework" });
 
-    // Two effects: tool registration + host bridge.
-    expect(effects).toHaveLength(2);
+    // One effect (tool registration); GreetingRemote registers at construction.
+    expect(effects).toHaveLength(1);
+    expect(provided).toEqual(["greeting"]);
 
-    // Running the effects performs the registrations and returns disposers.
-    const disposers: (() => void)[] = [];
-    for (const effect of effects) {
-      const result = effect();
-      expect(typeof result).toBe("function");
-      if (typeof result === "function") disposers.push(result as () => void);
-    }
+    const result = effects[0]?.();
+    expect(typeof result).toBe("function");
+    if (typeof result === "function") (result as () => void)();
 
     expect(register).toHaveBeenCalledTimes(1);
     const definition = register.mock.calls[0]?.[0];
     expect(definition).toMatchObject({ name: "hello_world_greet" });
-
-    for (const dispose of disposers) dispose();
     expect(disposer).toHaveBeenCalled();
   });
 });
