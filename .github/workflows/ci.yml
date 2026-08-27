@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # development is the daily working branch — broken commits there should
+    # fail CI immediately, not on the next merge to main.
+    branches: [main, development]
   pull_request:
 
 jobs:
@@ -25,8 +27,18 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Lockfile registry hosts
+        run: npm run lock:check
+
       - name: Format
         run: npm run format:check
+
+      # The framework's client half imports `dsh-plugin-framework/remote`,
+      # whose types are generated into lib/ (`scripts/generate-typert.mjs`).
+      # The committed lib/ carries them, but regenerate first so lint and
+      # type-check never depend on stale checked-in outputs.
+      - name: Generate typert artifacts
+        run: npm run generate:typert
 
       - name: Lint
         run: npm run lint
@@ -51,3 +63,19 @@ jobs:
 
       - name: Skills sync
         run: npm run skills:check
+
+      - name: Verify committed lib/ matches a fresh build
+        run: git diff --exit-code -- lib
+
+      # dsh installs this package into a profile with `npm install` (devDeps
+      # omitted) — the guarded `prepare` script must not fail in that
+      # environment (husky is a devDependency and is absent there). Simulate
+      # the consumer flow on a fresh clone.
+      - name: Verify consumer install (npm install --omit=dev in a fresh clone)
+        shell: bash
+        run: |
+          tmp="$RUNNER_TEMP/consumer-install-test"
+          rm -rf "$tmp"
+          git clone --quiet "$GITHUB_WORKSPACE" "$tmp"
+          cd "$tmp"
+          npm install --omit=dev

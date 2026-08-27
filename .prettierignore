@@ -3,3 +3,7 @@ node_modules/
 /coverage/
 /dist/
 package-lock.json
+
+# release-please generated changelog — its `*` bullets differ from Prettier's
+# markdown style; formatting it here would make the release PR fail format:check
+CHANGELOG.md

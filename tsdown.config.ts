@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { basename, resolve, sep } from "node:path";
 import type { UserConfig } from "tsdown";
 import { transform } from "lightningcss";
 
@@ -39,12 +39,27 @@ const ID: string = JSON.parse(
  * Virtual-id wrapper keeping module CSS away from tsdown's own css pipeline
  * (which requires @tsdown/css). The suffix matters: tsdown's guard matches ids
  * ending in `.css`, so the virtual id must not.
+ *
+ * The virtual id is built from a REPO-RELATIVE path (never the absolute path):
+ * tsdown stamps virtual module ids into `//#region` comments in the bundle,
+ * and an absolute path there makes `lib/client.js` differ between two checkouts
+ * (CI asserts `git diff --exit-code -- lib` after a fresh build). The same
+ * holds for whether the id ends in `.css`, which is why the suffix is `.mjs`.
  */
 const CSS_VIRTUAL_PREFIX = "\0dsh-css:";
 const GLOBAL_CSS_VIRTUAL_PREFIX = "\0dsh-global-css:";
 const INLINE_CSS_VIRTUAL_PREFIX = "\0dsh-inline-css:";
 const CSS_VIRTUAL_SUFFIX = ".mjs";
 const INLINE_CSS_QUERY = "?inline";
+
+/** Repo-root-relative path of a source file ("" when outside the repo). */
+function repoRelativePath(abs: string): string {
+  const root = resolve(import.meta.dirname);
+  const rel = abs.startsWith(root) ? abs.slice(root.length + 1) : basename(abs);
+  // Normalize separators so the stamped //#region ids are byte-identical on
+  // Windows and POSIX checkouts (the committed-lib gate diffs both).
+  return rel.split(sep).join("/");
+}
 
 /** Emit one plugin-owned style injector and an optional CSS Modules export. */
 function styleInjectionModule(
@@ -65,7 +80,13 @@ function styleInjectionModule(
     "}",
   ];
   source.push(
-    classMap === undefined ? "export {};" : `export default ${JSON.stringify(classMap)};`,
+    classMap === undefined
+      ? "export {};"
+      : // lightningcss emits cssExports keys in unspecified (hash-map) order;
+        // sort them so the bundle is byte-stable across builds and checkouts.
+        `export default ${JSON.stringify(
+          Object.fromEntries(Object.entries(classMap).sort(([a], [b]) => a.localeCompare(b))),
+        )};`,
   );
   return source.join("\n");
 }
@@ -97,17 +118,24 @@ export default [
         resolveId(source: string, importer: string | undefined) {
           if (!source.endsWith(".module.css")) return null;
           const abs = importer !== undefined ? sourceAssetPath(source, importer) : source;
-          return CSS_VIRTUAL_PREFIX + abs + CSS_VIRTUAL_SUFFIX;
+          return CSS_VIRTUAL_PREFIX + repoRelativePath(abs) + CSS_VIRTUAL_SUFFIX;
         },
         async load(virtualId: string) {
           if (!virtualId.startsWith(CSS_VIRTUAL_PREFIX)) return null;
-          const fileId = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length);
+          const fileId = resolve(
+            import.meta.dirname,
+            virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length),
+          );
           this.addWatchFile(fileId);
           const source = await readFile(fileId);
           const { code, exports: cssExports } = transform({
+            // `filename` feeds lightningcss's `[hash]` token, which mixes the
+            // absolute path into the output — different checkout roots would
+            // produce different class hashes and break the committed-lib diff
+            // gate. Pure `[local]` names keep the bundle reproducible.
             filename: fileId,
             code: source,
-            cssModules: { pattern: "[hash]_[local]" },
+            cssModules: { pattern: "[local]" },
             minify: true,
           });
           const classMap: Record<string, string> = {};
@@ -123,13 +151,13 @@ export default [
           if (!source.endsWith(`.css${INLINE_CSS_QUERY}`)) return null;
           const stylesheet = source.slice(0, -INLINE_CSS_QUERY.length);
           const abs = importer !== undefined ? sourceAssetPath(stylesheet, importer) : stylesheet;
-          return INLINE_CSS_VIRTUAL_PREFIX + abs + CSS_VIRTUAL_SUFFIX;
+          return INLINE_CSS_VIRTUAL_PREFIX + repoRelativePath(abs) + CSS_VIRTUAL_SUFFIX;
         },
         async load(virtualId: string) {
           if (!virtualId.startsWith(INLINE_CSS_VIRTUAL_PREFIX)) return null;
-          const fileId = virtualId.slice(
-            INLINE_CSS_VIRTUAL_PREFIX.length,
-            -CSS_VIRTUAL_SUFFIX.length,
+          const fileId = resolve(
+            import.meta.dirname,
+            virtualId.slice(INLINE_CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length),
           );
           this.addWatchFile(fileId);
           const source = await readFile(fileId);
@@ -142,13 +170,13 @@ export default [
         resolveId(source: string, importer: string | undefined) {
           if (!source.endsWith(".css") || source.endsWith(".module.css")) return null;
           const abs = importer !== undefined ? sourceAssetPath(source, importer) : source;
-          return GLOBAL_CSS_VIRTUAL_PREFIX + abs + CSS_VIRTUAL_SUFFIX;
+          return GLOBAL_CSS_VIRTUAL_PREFIX + repoRelativePath(abs) + CSS_VIRTUAL_SUFFIX;
         },
         async load(virtualId: string) {
           if (!virtualId.startsWith(GLOBAL_CSS_VIRTUAL_PREFIX)) return null;
-          const fileId = virtualId.slice(
-            GLOBAL_CSS_VIRTUAL_PREFIX.length,
-            -CSS_VIRTUAL_SUFFIX.length,
+          const fileId = resolve(
+            import.meta.dirname,
+            virtualId.slice(GLOBAL_CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length),
           );
           this.addWatchFile(fileId);
           const source = await readFile(fileId);

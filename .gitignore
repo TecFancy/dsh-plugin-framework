@@ -1,11 +1,14 @@
 # Node
 node_modules/
 /dist/
-/lib/
 /coverage/
 *.tsbuildinfo
 *.log
 npm-debug.log*
+
+# lib/ is committed on purpose: the release pipeline publishes from the
+# committed build output and CI asserts it matches a fresh build
+# (git diff --exit-code -- lib).
 
 # OS / editor
 .DS_Store

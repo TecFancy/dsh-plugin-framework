@@ -1,0 +1,1 @@
+{"version":3,"file":"register-tool.d.ts","sourceRoot":"","sources":["../../../../src/features/hello-settings/api/register-tool.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,wBAAwB,CAAC;AAC1D,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,qCAAqC,CAAC;AAE3E;;;;;;;;GAQG;AACH,wBAAgB,iBAAiB,CAC/B,KAAK,EAAE,IAAI,CAAC,WAAW,EAAE,UAAU,CAAC,EACpC,QAAQ,EAAE,eAAe,GACxB,MAAM,IAAI,CAsBZ"}

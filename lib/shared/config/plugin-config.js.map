@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin-config.js","sourceRoot":"","sources":["../../../src/shared/config/plugin-config.ts"],"names":[],"mappings":"AAAA,OAAO,CAAC,MAAM,0BAA0B,CAAC;AAczC,MAAM,CAAC,MAAM,MAAM,GAAoB,CAAC,CAAC,MAAM,CAAC;IAC9C,eAAe,EAAE,CAAC,CAAC,MAAM,EAAE,CAAC,OAAO,CAAC,iCAAiC,CAAC;CACvE,CAAC,CAAC"}
