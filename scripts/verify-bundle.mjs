@@ -24,6 +24,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const bundlePath = resolve(repoRoot, "lib", "client.js");
+const pkg = JSON.parse(readFileSync(resolve(repoRoot, "package.json"), "utf8"));
 
 const failures = [];
 
@@ -59,9 +60,10 @@ if (exists(bundlePath)) {
     /return module\.exports;\s*\}\s*\}\);\s*$/.test(tail),
     "bundle must close with the CJS factory footer (tsdown footer misconfigured?)",
   );
+  const expectedId = `id: ${JSON.stringify(pkg.name)}`;
   check(
-    content.includes('id: "dsh-plugin-framework"'),
-    'bundle id mismatch: expected id: "dsh-plugin-framework"',
+    content.includes(expectedId),
+    `bundle id mismatch: expected ${expectedId} (client-modules loads the bundle under the package name; a non-matching id fails at boot with "loaded without registering")`,
   );
   check(
     content.includes("dsh-plugin-framework#greeting/getGreeting"),
@@ -80,6 +82,13 @@ if (exists(bundlePath)) {
     "bundle must be a single file (codeSplitting must be disabled in tsdown.config.ts)",
   );
 }
+
+const patchSource = readFileSync(resolve(repoRoot, "cordis.patch.yml"), "utf8");
+const patchName = patchSource.match(/^\s*name:\s*["']([^"']+)["']/m)?.[1];
+check(
+  patchName === pkg.name,
+  `cordis.patch.yml row name ("${patchName}") must equal package.json name ("${pkg.name}") - the loader imports it as an ESM specifier`,
+);
 
 if (failures.length > 0) {
   console.error("bundle:check FAILED");

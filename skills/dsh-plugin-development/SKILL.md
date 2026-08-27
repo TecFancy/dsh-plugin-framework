@@ -21,7 +21,12 @@ config)`. No JSX, ever.
   by tsdown into ONE file `lib/client.js` in the
   `window.__ModuleLoader__.load({ id, factory })` CJS closure format. Only
   externals are `react` / `react/jsx-runtime`. No `@deepseek-ai/*` runtime
-  imports on the client (types are structural mirrors).
+  imports on the client (types are structural mirrors). The bundle `id` MUST
+  be the package name from package.json (scoped names included):
+  `client-modules` keys `/plugins/<id>/client.js` and the boot graph by the
+  loader entry's `options.name`, i.e. the full package name — a bare id
+  fails at boot with `loaded without registering "<pkg name>"`. Derive it in
+  tsdown.config.ts from package.json, never hardcode it.
 
 ## Layer rules (enforced by ESLint no-restricted-paths)
 
