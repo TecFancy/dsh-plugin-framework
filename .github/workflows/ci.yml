@@ -61,9 +61,6 @@ jobs:
       - name: Bundle contract
         run: npm run bundle:check
 
-      - name: Skills sync
-        run: npm run skills:check
-
       - name: Verify committed lib/ matches a fresh build
         run: git diff --exit-code -- lib
 

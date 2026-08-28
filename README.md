@@ -55,7 +55,7 @@ src/
     features/<slice>/         UI features (slot sections)
     shared/<segment>/         client-side contracts and primitives
 scripts/                      tooling gates and generators
-skills/                       agent skills (synced to .claude/, .opencode/)
+.agents/skills/               agent skills (single source, discovered by dsh)
 docs/                         architecture, slice guide, decisions, port plan
 deploy/                       deployment-only config templates
 ```
@@ -74,7 +74,6 @@ and package-private RPC (`harness.handle` on host, `host.call` on client).
 | Format        | `npm run format` / `npm run format:check`       |
 | Test          | `npm run test` / `npm run test:coverage`        |
 | Alias drift   | `npm run aliases:check`                         |
-| Skills sync   | `npm run skills:sync` / `npm run skills:check`  |
 | Build         | `npm run build` (host tsc + client tsdown)      |
 | Bundle verify | `npm run bundle:check`                          |
 | Full gate     | `npm run verify`                                |

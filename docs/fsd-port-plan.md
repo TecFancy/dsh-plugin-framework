@@ -6,6 +6,13 @@
 
 本文档只描述"如何把 fsd-react 的架构纪律移植成一个可复用的 dsh 插件脚手架框架"，不描述对 `dsh-auth-gate` 本身的改造方案(该仓库仅作为第 9 节的映射演练用例)。
 
+> 📌 **现状更新（skills 策略）**：本文档最初规划的 `skills/` 源目录 +
+> `scripts/sync-skills.mjs` 镜像到 `.claude/skills/`/`.opencode/skills/` 的机制
+> **已弃用**。当前实现：技能直接放在 `.agents/skills/<name>/SKILL.md`（dsh
+> 原生发现项目级 `.agents/skills/`，无需任何同步），`.claude/`、`.opencode/`
+> 目录与 `skills:sync`/`skills:check` 脚本均已删除。下文涉及该机制的行以本次
+> 注记为准。
+
 ---
 
 ## 目录
@@ -68,7 +75,7 @@
 - `eslint.config.js` 里 `FSD_LAYERS.flatMap(...)` 生成 `no-restricted-paths` zones 的算法（层数精简为三层，并新增 host/client 边界 zone）
 - `.betterer.ts` 的复杂度阈值数值（`complexity ≤ 15`、`max-lines ≤ 250`、`max-lines-per-function ≤ 80`）
 - commitlint + husky + lint-staged 全套（Conventional Commits 规则集、pre-commit/commit-msg/pre-push 三个 hook 的职责划分）
-- `skills/` 目录 + `scripts/sync-skills.mjs` 镜像同步机制（插件本身就要随包发布 `skills/<name>/SKILL.md`，这与 dsh 生态原生契合）
+- `.agents/skills/` 单源技能目录（技能直接写给 dsh 原生发现的项目级 `.agents/skills/`，插件随包发布 `.agents/skills/<name>/SKILL.md`，与 dsh 生态原生契合）
 - Vitest 覆盖率门禁思路（四项阈值统一红线，仅调整初始数值，见第 5 节）
 - 单 job `verify` 式 CI workflow 结构
 
@@ -109,7 +116,7 @@ dsh-plugin-framework/
 ├── eslint.config.js                   # FSD 分层规则（host 三层 + client 三层 + 跨边界 zone）+ 插件铁律相关规则
 ├── .betterer.ts                       # 复杂度门禁（复用 fsd-react 阈值）
 ├── commitlint.config.js               # Conventional Commits 规则
-├── .lintstagedrc.js                   # pre-commit 自动格式化 + eslint fix + skills 同步
+├── .lintstagedrc.js                   # pre-commit 自动格式化 + eslint fix（技能是 .agents/skills 单源，无需同步）
 ├── .husky/
 │   ├── pre-commit                     # npx lint-staged --concurrent 1
 │   ├── commit-msg                     # 剥离 AI trailer + commitlint --edit
@@ -119,10 +126,9 @@ dsh-plugin-framework/
 │   ├── check-aliases.mjs              # 校验 tsconfig.json / tsconfig.client.json 的 paths 与 aliases.json 一致
 │   ├── create-slice.mjs               # CLI 脚手架：生成 host/client 切片骨架（改造自 vite-plugin-fsd-slice-creator）
 │   ├── check-no-emdash.mjs            # 组织级风格规则：禁止 em-dash（可选，按团队规范决定是否启用）
-│   ├── sync-skills.mjs                # skills/ → .claude/skills/（及可扩展的其他 agent 镜像目标）
 │   ├── verify-bundle.mjs              # 校验 tsdown 产物：单文件、外部化依赖仅 react/react-jsx-runtime(/primitives)
 │   └── install-to-profile.mjs         # 把构建产物安装进本地 web profile 做冒烟测试（参考 dsh-deeptutor 的 install-profile.mjs）
-├── skills/
+├── .agents/skills/
 │   ├── dsh-plugin-development/SKILL.md    # 裁剪自官方 cordis-plugin-development SKILL + 本框架专属约定
 │   └── dsh-plugin-hello-world/SKILL.md    # 示例插件对外技能文档模板（随包发布，供使用该插件的 Agent 阅读）
 ├── docs/
@@ -418,7 +424,7 @@ export default [
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
-  "files": ["lib", "cordis.patch.yml", "skills"],
+  "files": ["lib", "cordis.patch.yml", ".agents/skills"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && tsdown && tsc -p tsconfig.client.build.json",
     "type-check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit"
@@ -587,21 +593,21 @@ export default [
 
 ### 5.2 工程门禁优先级清单
 
-| 门禁                                 | 在插件仓库里的形态                                                                                                                                                                        | 优先级                                                 |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| TypeScript 严格类型检查              | 双 tsconfig（`tsc -p tsconfig.json --noEmit` + `tsc -p tsconfig.client.json --noEmit`），沿用 fsd-react 的严格集（`strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` 等） | **现在做**（阶段 1）                                   |
-| ESLint 分层规则                      | 第 4.3 节配置，零额外依赖（`eslint-plugin-import-x` 已在 pipeline 中）                                                                                                                    | **现在做**（阶段 2）                                   |
-| Vitest + 覆盖率阈值                  | 单一 `vitest.config.ts` 同时跑 host（`.test.ts`）与 client（`.test.tsx`），初始阈值建议从 **70%** 起步（插件初期代码量小，几行未覆盖代码就会大幅波动 80% 红线），随插件成熟度上调到 80%   | **现在做**（阶段 2），阈值上调放到**以后做**           |
-| `aliases:check`                      | 同 5.1，脚本改造                                                                                                                                                                          | **现在做**（阶段 2）                                   |
-| commitlint + husky + lint-staged     | 原样复用 fsd-react 三段 hook 职责划分                                                                                                                                                     | **现在做**（阶段 4，但成本极低，也可提前到阶段 1）     |
-| Betterer 复杂度门禁                  | 阈值原样复用（`complexity 15`/`max-lines 250`/`max-lines-per-function 80`），`exclude` 规则改为排除 `*.test.{ts,tsx}` 与自动生成文件                                                      | **框架建成时**（阶段 4）                               |
-| CI workflow 完整化                   | `type-check` → `lint` → `test --coverage` → `build` → `verify-bundle.mjs`                                                                                                                 | **框架建成时**（阶段 4）                               |
-| `verify-bundle.mjs`（新增）          | 校验 tsdown 产物：单文件、`external` 仅含 `react`/`react/jsx-runtime`（/`@deepseek-ai/dsh-client-ui-primitives`）、bundle 顶层确有且仅有一次 `window.__ModuleLoader__.load(...)` 调用     | **框架建成时**（阶段 4）                               |
-| `skills:sync`/`skills:check`         | 原样复用，`TARGETS` map 从一开始就设计成可扩展（`{ claude: ".claude/skills", opencode: ".opencode/skills" }`），规避 fsd-react 当前 `.opencode/skills/` 手工维护漂移的问题                | **框架建成时**（阶段 5）                               |
-| `format:check`（Prettier）           | 原样复用                                                                                                                                                                                  | **框架建成时**（阶段 4）                               |
-| Steiger                              | 见 1.3 节分析，插件规模小时噪音大于价值                                                                                                                                                   | **以后做**（插件规模显著增长、slice 数量变多后再引入） |
-| `lock:check`（pnpm lockfile 一致性） | 发布多个插件、共享 CI 模板时才有意义                                                                                                                                                      | **以后做**                                             |
-| `check-no-emdash.mjs`                | 按组织规范决定（本组织已有相关指令，建议启用）                                                                                                                                            | **现在做**，成本极低                                   |
+| 门禁                                            | 在插件仓库里的形态                                                                                                                                                                        | 优先级                                                 |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| TypeScript 严格类型检查                         | 双 tsconfig（`tsc -p tsconfig.json --noEmit` + `tsc -p tsconfig.client.json --noEmit`），沿用 fsd-react 的严格集（`strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` 等） | **现在做**（阶段 1）                                   |
+| ESLint 分层规则                                 | 第 4.3 节配置，零额外依赖（`eslint-plugin-import-x` 已在 pipeline 中）                                                                                                                    | **现在做**（阶段 2）                                   |
+| Vitest + 覆盖率阈值                             | 单一 `vitest.config.ts` 同时跑 host（`.test.ts`）与 client（`.test.tsx`），初始阈值建议从 **70%** 起步（插件初期代码量小，几行未覆盖代码就会大幅波动 80% 红线），随插件成熟度上调到 80%   | **现在做**（阶段 2），阈值上调放到**以后做**           |
+| `aliases:check`                                 | 同 5.1，脚本改造                                                                                                                                                                          | **现在做**（阶段 2）                                   |
+| commitlint + husky + lint-staged                | 原样复用 fsd-react 三段 hook 职责划分                                                                                                                                                     | **现在做**（阶段 4，但成本极低，也可提前到阶段 1）     |
+| Betterer 复杂度门禁                             | 阈值原样复用（`complexity 15`/`max-lines 250`/`max-lines-per-function 80`），`exclude` 规则改为排除 `*.test.{ts,tsx}` 与自动生成文件                                                      | **框架建成时**（阶段 4）                               |
+| CI workflow 完整化                              | `type-check` → `lint` → `test --coverage` → `build` → `verify-bundle.mjs`                                                                                                                 | **框架建成时**（阶段 4）                               |
+| `verify-bundle.mjs`（新增）                     | 校验 tsdown 产物：单文件、`external` 仅含 `react`/`react/jsx-runtime`（/`@deepseek-ai/dsh-client-ui-primitives`）、bundle 顶层确有且仅有一次 `window.__ModuleLoader__.load(...)` 调用     | **框架建成时**（阶段 4）                               |
+| 技能目录策略（原 `skills:sync`/`skills:check`） | **不复用镜像同步**：技能直接写 `.agents/skills/`（dsh 原生发现项目级该目录），从源头消除 fsd-react 当前 `.opencode/skills/` 手工维护漂移的问题                                            | **框架建成时**（阶段 5）                               |
+| `format:check`（Prettier）                      | 原样复用                                                                                                                                                                                  | **框架建成时**（阶段 4）                               |
+| Steiger                                         | 见 1.3 节分析，插件规模小时噪音大于价值                                                                                                                                                   | **以后做**（插件规模显著增长、slice 数量变多后再引入） |
+| `lock:check`（pnpm lockfile 一致性）            | 发布多个插件、共享 CI 模板时才有意义                                                                                                                                                      | **以后做**                                             |
+| `check-no-emdash.mjs`                           | 按组织规范决定（本组织已有相关指令，建议启用）                                                                                                                                            | **现在做**，成本极低                                   |
 
 ---
 
@@ -615,8 +621,8 @@ export default [
 | `docs/slice-guide.md`                                                | 结构保留（分层定义 → 决策树 → 手动配方 → 经验法则），改写要点：删除 pages/widgets 相关内容，脚手架命令从 "FSD Explorer `/slices` 页面" 替换为 `node scripts/create-slice.mjs`，补充 host/client 镜像切片的建法说明                                                                                                                                                                        |
 | `docs/architecture.md`、`docs/decisions.md`                          | 结构保留，内容替换：路由/状态管理/设计令牌章节整体删除，替换为 host/client 隔离规则、Slot 通信约定、Cordis 生命周期纪律                                                                                                                                                                                                                                                                   |
 | `plugins/vite-plugin-fsd-slice-creator.ts` + FSD Explorer(`/slices`) | **改造为 CLI**：去掉 `configureServer` 中间件外壳与 `apply: "serve"` 限定，改成 `process.argv` 解析 + Node `fs` 直接写盘；`SEGMENT_TEMPLATES` 模板函数（`uiTemplate`/`modelTemplate`/`apiTemplate`）基本保留，import 路径从 `"shared/api"` 改为框架别名；新增 `--side host\|client` 参数控制生成目标目录与 segment 集合（client 侧没有独立 `api`/`config` segment，数据来自 `host.call`） |
-| `commitlint.config.js`、`.lintstagedrc.js`、`.husky/*`               | 原样复用，包括 `skills/**/*` 用函数形式规避 Windows 竞态的写法、`commit-msg` 里剥离 `Co-authored-by: Copilot` trailer 的 `sed` 脚本                                                                                                                                                                                                                                                       |
-| `scripts/sync-skills.mjs`                                            | 原样复用整套哈希比较 + "先写后清理" 的 drift 检测逻辑；`TARGETS` map 从一开始就写成多目标形式                                                                                                                                                                                                                                                                                             |
+| `commitlint.config.js`、`.lintstagedrc.js`、`.husky/*`               | 原样复用（lint-staged 不再需要 `skills/**/*` 同步规则——技能是 `.agents/skills/` 单源），包括 `commit-msg` 里剥离 `Co-authored-by: Copilot` trailer 的 `sed` 脚本                                                                                                                                                                                                                          |
+| `scripts/sync-skills.mjs`                                            | **不复用**（见文首 📌 现状更新注记）：技能单源 `.agents/skills/`，dsh 原生发现，无需镜像                                                                                                                                                                                                                                                                                                  |
 | `scripts/check-no-emdash.mjs`                                        | 原样复用（可选启用）                                                                                                                                                                                                                                                                                                                                                                      |
 | `scripts/generate-tokens.mjs`                                        | **不复用核心管道**（插件不需要设计令牌），但其 "AUTO-GENERATED 头部警告 + 手工维护补充常量分离" 的写法思路，可用于框架未来若要新增其他生成脚本（如从 `cordis.patch.yml` 生成类型声明）时参考                                                                                                                                                                                              |
 | `scripts/generate-routes.mjs`                                        | 不复用（无路由）                                                                                                                                                                                                                                                                                                                                                                          |
@@ -652,9 +658,9 @@ export default [
 
 ### 阶段 5：文档 + 模板打磨
 
-**完成标准**：`docs/architecture.md`、`docs/slice-guide.md`、`docs/decisions.md` 齐全；`AGENTS.md` 足以让一个未参与本次讨论的新 agent 直接照着建切片而不用追问；`scripts/create-slice.mjs` 可用并有基本测试；`skills/dsh-plugin-development/SKILL.md` 完成。
+**完成标准**：`docs/architecture.md`、`docs/slice-guide.md`、`docs/decisions.md` 齐全；`AGENTS.md` 足以让一个未参与本次讨论的新 agent 直接照着建切片而不用追问；`scripts/create-slice.mjs` 可用并有基本测试；`.agents/skills/dsh-plugin-development/SKILL.md` 完成。
 
-**创建文件**：`docs/architecture.md`、`docs/slice-guide.md`、`docs/decisions.md`、`AGENTS.md`、`scripts/create-slice.mjs`、`scripts/sync-skills.mjs`、`skills/dsh-plugin-development/SKILL.md`。
+**创建文件**：`docs/architecture.md`、`docs/slice-guide.md`、`docs/decisions.md`、`AGENTS.md`、`scripts/create-slice.mjs`、`.agents/skills/dsh-plugin-development/SKILL.md`。
 
 ---
 
@@ -666,7 +672,7 @@ export default [
 - [ ] 4. 编辑 `package.json` 的 `peerDependencies`/`dependencies`（按需增删 `@deepseek-ai/cordis` 版本、`@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-storage-domain` 等）
 - [ ] 5. 用 `node scripts/create-slice.mjs --layer features --name <slice-name> --side host` 生成新切片骨架（host/client 两侧按需分别执行）
 - [ ] 6. 实现业务逻辑，遵循第 4 节分层规则（features 不能互相 import，shared 不能有业务逻辑）
-- [ ] 7. 补充/更新 `skills/<plugin-name>/SKILL.md`（面向使用该插件的 Agent 的操作手册）
+- [ ] 7. 补充/更新 `.agents/skills/<plugin-name>/SKILL.md`（面向使用该插件的 Agent 的操作手册）
 - [ ] 8. 本地验证：`npm run verify`
 - [ ] 9. 构建：`npm run build`（host `tsc` + client `tsdown`）
 - [ ] 10. 本地冒烟：`node scripts/install-to-profile.mjs` 把构建产物安装进 `~/.dsh/profiles/web`，重启 dsh 验证设置页 UI 与 Tool 调用

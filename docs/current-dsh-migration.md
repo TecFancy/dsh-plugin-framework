@@ -150,7 +150,6 @@ with `ctx.remote.$mount()` (`packages/api/remotes`,
      },
      "./client": { "types": "./lib/client/index.d.ts", "default": "./lib/client.js" },
      "./cordis.patch.yml": "./cordis.patch.yml",
-     "./skills/*": "./skills/*",
      "./package.json": "./package.json"
    }
    ```
@@ -298,7 +297,7 @@ Confirm the exact list against `packages/bundle/web-app/cordis.patch.yml`
    belong to dynamic plugins only.
 2. `docs/slice-guide.md`, section "Crossing host and client": replace the
    `harness.handle`/`host.call` recipe with the Typert Remote recipe from W1.
-3. `skills/dsh-plugin-development/SKILL.md`: same corrections; point at
+3. `.agents/skills/dsh-plugin-development/SKILL.md`: same corrections; point at
    `docs/user/develop/` (lifecycle, services, events), `publish.md`, and
    `packages/client/AGENTS.md` as the authoritative static-plugin references,
    and keep the official dynamic-plugin skill clearly labeled as out of scope
@@ -409,6 +408,6 @@ generation:
 | `package.json`                                                   | deps: `@deepseek-ai/dsh-typert-protocol`; devDeps: `@deepseek-ai/dsh-typert-generator`, `lightningcss`; exports `./remote` + `./typert`; `files` additions; fixed `dsh.client.inject` |
 | `deploy/cordis.patch.yml`                                        | bare `- id:` row, no `set` op                                                                                                                                                         |
 | `docs/architecture.md`, `docs/slice-guide.md`, `README.md`       | rewrite builtins/RPC/smoke-test sections                                                                                                                                              |
-| `skills/dsh-plugin-development/SKILL.md`                         | same corrections                                                                                                                                                                      |
+| `.agents/skills/dsh-plugin-development/SKILL.md`                 | same corrections                                                                                                                                                                      |
 | `docs/decisions.md`                                              | add D11-D14                                                                                                                                                                           |
 | `scripts/install-to-profile.mjs`                                 | align with `dsh plugin add` flow                                                                                                                                                      |

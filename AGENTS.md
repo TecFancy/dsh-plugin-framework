@@ -23,7 +23,6 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 | Aliases drift   | `npm run aliases:check`                                                     |
 | Build           | `npm run build` (host tsc, tsdown client bundle, client d.ts)               |
 | Bundle contract | `npm run bundle:check`                                                      |
-| Skills sync     | `npm run skills:sync` / `npm run skills:check`                              |
 | Full gate       | `npm run verify` (must stay green)                                          |
 | New slice       | `node scripts/create-slice.mjs --side host --layer features --name <kebab>` |
 
@@ -67,6 +66,6 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 
 ## Skills
 
-Agent skills live in `skills/` (source of truth) and are mirrored to
-`.claude/skills/` and `.opencode/skills/` by `npm run skills:sync`.
-`skills/dsh-plugin-development/SKILL.md` is the deep-dive for plugin work.
+Agent skills live in `.agents/skills/` (single source; dsh discovers them out
+of the box, no mirroring). `.agents/skills/dsh-plugin-development/SKILL.md`
+is the deep-dive for plugin work.
