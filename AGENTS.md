@@ -21,6 +21,7 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 | Format           | `npm run format:check` (fix with `npm run format`)                          |
 | Test             | `npm run test` / `npm run test:coverage` (v8, 70% floor)                    |
 | Aliases drift    | `npm run aliases:check`                                                     |
+| Slice boundaries | `npm run slice:check`                                                       |
 | Decision records | `npm run decisions:check`                                                   |
 | Build            | `npm run build` (host tsc, tsdown client bundle, client d.ts)               |
 | Bundle contract  | `npm run bundle:check`                                                      |
@@ -32,12 +33,14 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 1. Host code (`src/**` excluding `src/client/**`) never uses JSX/React.
 2. Client code (`src/client/**`) never touches `window`/`document` directly.
 
-## Layer rules (enforced by ESLint no-restricted-paths)
+## Layer rules
 
 - Host: `src/features` > `src/entities` > `src/shared`; client mirrors under
-  `src/client/`. A layer imports only lower layers; same-layer slices never
-  import each other; host and client never import each other.
-- Every slice exposes an `index.ts` barrel as its only import surface.
+  `src/client/`. A layer imports only lower layers; host and client never
+  import each other (eslint no-restricted-paths zones).
+- Every slice exposes an `index.ts` barrel as its only import surface;
+  same-layer slices never import each other, even through barrels
+  (scripts/verify-slice-boundaries.mjs, fail-closed).
 - Imports are relative: host with the `.js` suffix, client with the
   `.ts`/`.tsx` suffix. The `client/*` aliases (aliases.json +
   tsconfig.client.json + vitest resolve.alias, checked by
@@ -62,8 +65,40 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
   the dynamic plugin evaluators.
 - No em-dash characters in `src/**` (scripts/check-no-emdash.mjs).
 - Commit messages: Conventional Commits, types
-  feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert (commitlint),
-  subject in English, no AI-author trailers.
+  feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert, subject in
+  English (commitlint, fails closed), no AI-author trailers (`.husky/commit-msg`
+  strips known AI tools; human co-authors are kept).
+
+## Gate coverage map
+
+Every rule above is either enforced by a machine or explicitly relies on
+humans — nothing is a deaf "suggestion". Violations fail `npm run verify`,
+lint-staged (staged files) and CI.
+
+| Rule                                              | Gate                                   |
+| ------------------------------------------------- | -------------------------------------- |
+| FSD layer direction; host/client boundary         | eslint no-restricted-paths zones       |
+| Iron law 1: no JSX/React in host                  | eslint no-restricted-syntax            |
+| Iron law 2: no window/document in client          | eslint no-restricted-globals           |
+| Slice barrels; no same-layer slice imports        | scripts/verify-slice-boundaries.mjs    |
+| No em-dash in `src/**`                            | scripts/check-no-emdash.mjs            |
+| `client/*` aliases in sync                        | scripts/check-aliases.mjs              |
+| Lockfile registry hosts                           | scripts/check-lockfile-registry.mjs    |
+| Decision record lifecycle                         | scripts/verify-decision-records.mjs    |
+| Bundle contract                                   | scripts/verify-bundle.mjs              |
+| Import suffixes (host `.js`, client `.ts`/`.tsx`) | tsc (NodeNext / Bundler)               |
+| Coverage ≥ 70%                                    | vitest v8 thresholds                   |
+| Conventional Commits + English subject            | commitlint (`commit-msg`, fail-closed) |
+| No AI-author trailers in history                  | `.husky/commit-msg` (auto-strip)       |
+
+Relies on humans (checked in code review, not mechanically enforced):
+
+- Lifecycle: contributions via `ctx.effect` with retained disposers; nothing
+  at module scope.
+- Static bundles receive cordis services; no `harness`/`host`/`styles`
+  builtins.
+- Config exported as schemastery `Config` from the plugin root.
+- Tests sit next to code; client UI tests carry the jsdom docblock.
 
 ## Skills
 

@@ -1,5 +1,5 @@
 import greetingRemote from "dsh-plugin-framework/remote";
-import { HelloSettingsSection } from "./features/hello-settings/ui/HelloSettingsSection.tsx";
+import { HelloSettingsSection } from "./features/hello-settings/index.ts";
 import type { HelloClientContext } from "./shared/config/index.ts";
 
 /**

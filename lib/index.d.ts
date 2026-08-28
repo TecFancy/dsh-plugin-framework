@@ -1,5 +1,5 @@
 import type { Context } from "@deepseek-ai/cordis";
-import { Config, type PluginConfig } from "./shared/config/plugin-config.js";
+import { Config, type PluginConfig } from "./shared/config/index.js";
 /**
  * dsh-plugin-framework is the reference plugin shipped with the framework
  * scaffold: it demonstrates every layer of the architecture in one small slice

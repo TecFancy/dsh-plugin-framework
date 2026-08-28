@@ -1,8 +1,7 @@
 import type { Context } from "@deepseek-ai/cordis";
-import { GreetingRemote } from "./features/hello-settings/api/remote.js";
-import { registerHelloTool } from "./features/hello-settings/api/register-tool.js";
+import { GreetingRemote, registerHelloTool } from "./features/hello-settings/index.js";
 import { GreetingService } from "./entities/greeting/index.js";
-import { Config, type PluginConfig } from "./shared/config/plugin-config.js";
+import { Config, type PluginConfig } from "./shared/config/index.js";
 
 /**
  * dsh-plugin-framework is the reference plugin shipped with the framework

@@ -46,6 +46,9 @@ jobs:
       - name: No em-dash
         run: npm run lint:no-emdash
 
+      - name: Slice boundaries
+        run: npm run slice:check
+
       - name: Alias drift
         run: npm run aliases:check
 
