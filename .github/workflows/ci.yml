@@ -49,6 +49,9 @@ jobs:
       - name: Alias drift
         run: npm run aliases:check
 
+      - name: Decision records
+        run: npm run decisions:check
+
       - name: Type-check (host + client)
         run: npm run type-check
 

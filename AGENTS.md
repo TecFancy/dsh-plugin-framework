@@ -14,17 +14,18 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 
 ## Commands
 
-| Task            | Command                                                                     |
-| --------------- | --------------------------------------------------------------------------- |
-| Type-check      | `npm run type-check` (host + client tsconfigs)                              |
-| Lint            | `npm run lint` / `npm run lint:no-emdash`                                   |
-| Format          | `npm run format:check` (fix with `npm run format`)                          |
-| Test            | `npm run test` / `npm run test:coverage` (v8, 70% floor)                    |
-| Aliases drift   | `npm run aliases:check`                                                     |
-| Build           | `npm run build` (host tsc, tsdown client bundle, client d.ts)               |
-| Bundle contract | `npm run bundle:check`                                                      |
-| Full gate       | `npm run verify` (must stay green)                                          |
-| New slice       | `node scripts/create-slice.mjs --side host --layer features --name <kebab>` |
+| Task             | Command                                                                     |
+| ---------------- | --------------------------------------------------------------------------- |
+| Type-check       | `npm run type-check` (host + client tsconfigs)                              |
+| Lint             | `npm run lint` / `npm run lint:no-emdash`                                   |
+| Format           | `npm run format:check` (fix with `npm run format`)                          |
+| Test             | `npm run test` / `npm run test:coverage` (v8, 70% floor)                    |
+| Aliases drift    | `npm run aliases:check`                                                     |
+| Decision records | `npm run decisions:check`                                                   |
+| Build            | `npm run build` (host tsc, tsdown client bundle, client d.ts)               |
+| Bundle contract  | `npm run bundle:check`                                                      |
+| Full gate        | `npm run verify` (must stay green)                                          |
+| New slice        | `node scripts/create-slice.mjs --side host --layer features --name <kebab>` |
 
 ## The two iron laws
 
@@ -69,3 +70,13 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 Agent skills live in `.agents/skills/` (single source; dsh discovers them out
 of the box, no mirroring). `.agents/skills/dsh-plugin-development/SKILL.md`
 is the deep-dive for plugin work.
+
+## Decision records
+
+Non-trivial decisions (a real alternative was considered and dropped, or a
+future agent would re-litigate it) go into `docs/decisions/` as a
+`YYYY-MM-DD-slug.{zh,en}.md` pair under `proposed/` → `implemented/` →
+`archived/`. Status is expressed by the directory, never by editing content;
+archived records are frozen (hash-checked, see
+`docs/decisions/README.md`). `npm run decisions:check` enforces the format on
+commit and in CI when decision files change.
