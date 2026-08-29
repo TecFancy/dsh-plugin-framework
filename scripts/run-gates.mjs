@@ -4,42 +4,61 @@
 // the change surface. Pre-push runs this via `.husky/pre-push`; full coverage
 // is CI's job, not every local run's. Fail-closed: unknown change shapes or a
 // broken git state fall back to the full set, never to a weaker one.
+//
+// This file is the shared template across the TecFancy dsh repos: the gate
+// list is NOT hardcoded — it is derived from the `verify` chain in
+// package.json (every `npm run <gate>` segment), and each gate is classified
+// into a scenario by name. Repos with a leaner verify chain automatically get
+// leaner scenarios.
 
+import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const GATES = [
-  "format:check",
-  "lint",
-  "lint:no-emdash",
-  "slice:check",
-  "aliases:check",
-  "lock:check",
-  "decisions:check",
-  "type-check",
-  "test:coverage",
-  "build",
-  "bundle:check",
-];
-
-const SCENARIOS = {
-  hygiene: [
-    "format:check",
-    "lint",
-    "lint:no-emdash",
-    "slice:check",
-    "aliases:check",
-    "lock:check",
-    "decisions:check",
-  ],
-  types: ["type-check"],
-  tests: ["test:coverage"],
-  build: ["build", "bundle:check"],
-  verify: GATES,
+// gate name -> scenario. Keep in sync when a repo adds a gate to verify.
+const SCENE_OF = {
+  "format:check": "hygiene",
+  lint: "hygiene",
+  "lint:no-emdash": "hygiene",
+  "slice:check": "hygiene",
+  "aliases:check": "hygiene",
+  "lock:check": "hygiene",
+  "decisions:check": "hygiene",
+  "type-check": "types",
+  typecheck: "types",
+  "test:coverage": "tests",
+  test: "tests",
+  build: "build",
+  "bundle:check": "build",
 };
+
+const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+const verifyScript = pkg.scripts?.verify ?? "";
+const GATES = verifyScript
+  .split("&&")
+  .map((part) => part.trim())
+  .filter((part) => part.startsWith("npm run "))
+  .map((part) => part.replace(/^npm run /, ""));
+
+if (GATES.length === 0) {
+  console.error(
+    "package.json has no `verify` chain of `npm run <gate>` segments — the M2 baseline is missing. See AGENTS.md.",
+  );
+  process.exit(2);
+}
+const unknownGates = GATES.filter((gate) => !SCENE_OF[gate]);
+if (unknownGates.length > 0) {
+  console.error(
+    `verify chain contains gates without a scenario mapping: ${unknownGates.join(", ")} - add them to SCENE_OF in scripts/run-gates.mjs.`,
+  );
+  process.exit(2);
+}
+
+const SCENARIOS = { hygiene: [], types: [], tests: [], build: [], verify: GATES };
+for (const gate of GATES) SCENARIOS[SCENE_OF[gate]].push(gate);
 
 // Change-surface rules: the first matching rule per changed file wins, and the
 // union of the matched scenarios is what runs. `verify` is the fail-closed
