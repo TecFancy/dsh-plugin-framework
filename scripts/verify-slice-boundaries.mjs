@@ -9,7 +9,7 @@
 // Fail-closed: an import that cannot be resolved fails instead of passing.
 
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
-import { join, dirname, relative, basename } from "node:path";
+import { join, dirname, relative, basename, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -17,6 +17,10 @@ const SRC_DIR = join(ROOT, "src");
 const LAYERS = ["features", "entities"];
 const ALIAS_PREFIXES = ["client/features", "client/entities", "client/shared"];
 const CODE_EXT = /\.(ts|tsx|js)$/;
+
+// path.relative/join return backslash paths on Windows; every path this
+// script reasons about is normalized to forward slashes (fs accepts both).
+const toPosix = (p) => p.split(sep).join("/");
 
 const errors = [];
 
@@ -38,6 +42,7 @@ function collectTsFiles(dir, out = []) {
 // shared/lib/logger and shared/ui/button are all slices. Files directly under
 // src/ or src/client/ are composition roots, not slices.
 function sliceOf(relPath) {
+  relPath = toPosix(relPath);
   const parts = relPath.split("/");
   if (parts[0] !== "src") return null;
   const isClient = parts[1] === "client";
@@ -92,7 +97,7 @@ function resolveTarget(parentRel, spec) {
   }
   for (const candidate of candidates) {
     const abs = join(ROOT, candidate);
-    if (existsSync(abs) && statSync(abs).isFile()) return candidate;
+    if (existsSync(abs) && statSync(abs).isFile()) return toPosix(candidate);
   }
   return null;
 }
@@ -138,7 +143,7 @@ const sliceDirs = new Set();
 let importCount = 0;
 
 for (const abs of files) {
-  const rel = relative(ROOT, abs);
+  const rel = toPosix(relative(ROOT, abs));
   const area = sliceOf(rel);
   if (area && area.name !== null) sliceDirs.add(area.dir);
   const code = readFileSync(abs, "utf8");
