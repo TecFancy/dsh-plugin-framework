@@ -12,6 +12,15 @@ new plugin) and a working example plugin that exercises every layer.
 Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 `docs/decisions.md`. The original port plan is `docs/fsd-port-plan.md`.
 
+## Branch model
+
+Development happens on `development`; `main` only receives merges from
+`development` (squash PRs, one conventional commit per PR, so release-please
+emits one CHANGELOG entry per change). CI runs on both branches. Never commit
+or push to `main` directly - release-please watches `main` pushes, and
+`feat`/`fix` commits there would trigger release PRs before the work is
+ready. Always work on `development` unless the user says otherwise.
+
 ## Commands
 
 | Task             | Command                                                                     |
