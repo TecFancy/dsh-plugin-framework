@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-framework",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Feature-Sliced Design scaffold for building maintainable dsh (DeepSeek Harness) Cordis plugins: host three-layer slices, mirrored single-file client bundle, and a full engineering gate suite (lint, type-check, coverage, bundle verification).",
   "keywords": [
     "dsh",
