@@ -25,7 +25,8 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 | Decision records | `npm run decisions:check`                                                   |
 | Build            | `npm run build` (host tsc, tsdown client bundle, client d.ts)               |
 | Bundle contract  | `npm run bundle:check`                                                      |
-| Full gate        | `npm run verify` (must stay green)                                          |
+| Scenario gates   | `npm run gates` (auto-detects the change surface; pre-push runs this)       |
+| Full gate        | `npm run verify` (full set - CI and release; not every local run)           |
 | New slice        | `node scripts/create-slice.mjs --side host --layer features --name <kebab>` |
 
 ## The two iron laws

@@ -8,8 +8,10 @@ on:
   pull_request:
 
 jobs:
-  verify:
-    name: verify (${{ matrix.os }})
+  # Static/hygiene gates: fast, no build needed. Parallel purpose per job
+  # (M3): failures surface in the owning job instead of a monolithic run.
+  hygiene:
+    name: hygiene (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -35,8 +37,8 @@ jobs:
 
       # The framework's client half imports `dsh-plugin-framework/remote`,
       # whose types are generated into lib/ (`scripts/generate-typert.mjs`).
-      # The committed lib/ carries them, but regenerate first so lint and
-      # type-check never depend on stale checked-in outputs.
+      # The committed lib/ carries them, but regenerate first so lint never
+      # depends on stale checked-in outputs.
       - name: Generate typert artifacts
         run: npm run generate:typert
 
@@ -55,11 +57,55 @@ jobs:
       - name: Decision records
         run: npm run decisions:check
 
+  quality:
+    name: quality (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate typert artifacts
+        run: npm run generate:typert
+
       - name: Type-check (host + client)
         run: npm run type-check
 
       - name: Test with coverage
         run: npm run test:coverage
+
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate typert artifacts
+        run: npm run generate:typert
 
       - name: Build
         run: npm run build
