@@ -12,6 +12,15 @@ new plugin) and a working example plugin that exercises every layer.
 Read first: `docs/architecture.md`, `docs/slice-guide.md`,
 `docs/decisions.md`. The original port plan is `docs/fsd-port-plan.md`.
 
+## Branch model
+
+Development happens on `development`; `main` only receives merges from
+`development` (squash PRs, one conventional commit per PR, so release-please
+emits one CHANGELOG entry per change). CI runs on both branches. Never commit
+or push to `main` directly - release-please watches `main` pushes, and
+`feat`/`fix` commits there would trigger release PRs before the work is
+ready. Always work on `development` unless the user says otherwise.
+
 ## Commands
 
 | Task             | Command                                                                     |
@@ -70,6 +79,22 @@ Read first: `docs/architecture.md`, `docs/slice-guide.md`,
   English (commitlint, fails closed), no AI-author trailers (`.husky/commit-msg`
   strips known AI tools; human co-authors are kept).
 
+## Verification discipline
+
+- **Report only commands actually run.** Gates cover the mechanical checks;
+  for anything outside them (smoke-install into a real profile, browser UI,
+  remote RPC), say exactly what was run. A bare "verified" without a command
+  is a red flag in review.
+- **Environment problems get retries before code changes.** Blocked by
+  permissions, registry, sandbox or profile state? Retry as-is, escalate
+  permissions, and gather evidence first - only then diagnose the logic.
+- **Tests describe behavior, not correctness.** When a behavior changes
+  deliberately, change its tests with it and say why in the PR; never weaken
+  assertions just to satisfy the 70% coverage floor.
+- **Every exception is signed.** `eslint-disable`, coverage exemptions and
+  skipped tests carry an in-place reason (e.g. `-- reason` on the suppression
+  comment). Review checks that the reason stands, not just that one exists.
+
 ## Gate coverage map
 
 Every rule above is either enforced by a machine or explicitly relies on
@@ -100,6 +125,12 @@ Relies on humans (checked in code review, not mechanically enforced):
   builtins.
 - Config exported as schemastery `Config` from the plugin root.
 - Tests sit next to code; client UI tests carry the jsdom docblock.
+- Verification claims: report only commands actually run; environment or
+  permission blocks get as-is retry before code changes.
+- Tests describe behavior, not correctness; assertion changes are explained
+  in the PR.
+- Exceptions are signed in place (`eslint-disable` / coverage exemptions /
+  skipped tests carry a reason); review checks the reason stands.
 
 ## Skills
 

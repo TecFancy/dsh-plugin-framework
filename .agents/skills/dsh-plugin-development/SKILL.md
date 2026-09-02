@@ -86,6 +86,22 @@ type-check (host+client), test:coverage (v8, 70% floor), build, bundle:check,
 skills:check. Keep it green. Client UI tests carry a `// @vitest-environment
 jsdom` docblock.
 
+## Verification discipline
+
+- Report only commands actually run: smoke-install into a real profile,
+  browser-UI and remote-RPC checks are manual verification - say exactly what
+  was run, never a blanket "verified". Profile restarts are manual by design
+  (they terminate the GUI session).
+- Blocked by permissions, registry, sandbox or profile state? Retry as-is and
+  escalate before touching logic; gather environment evidence first.
+- Tests describe behavior, not correctness: a deliberate behavior change
+  updates its tests in the same change and explains why in the PR; never
+  weaken assertions to hit the coverage floor.
+- Exceptions are signed in place: e.g.
+  `// eslint-disable-next-line <rule> -- <reason>` or equivalent, and skipped
+  tests / coverage exemptions carry a reason. Review checks that the reason
+  stands.
+
 ## Workflow
 
 1. Read docs/architecture.md and docs/slice-guide.md first.
