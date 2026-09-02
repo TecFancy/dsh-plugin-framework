@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/TecFancy/dsh-plugin-framework/compare/v0.3.0...v0.3.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* normalize path separators in the slice boundary gate ([01732e8](https://github.com/TecFancy/dsh-plugin-framework/commit/01732e8e6ffc35b81a01f4362a6027d82bcb89aa))
+
 ## [0.3.0](https://github.com/TecFancy/dsh-plugin-framework/compare/v0.2.0...v0.3.0) (2026-08-29)
 
 
